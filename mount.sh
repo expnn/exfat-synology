@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# 通过该命令查看被调用的参数
+# echo "$@" >> /tmp/tmp-mount-usb-device.txt
+# 目前被调用的参数形如：
+#   -t exfat -o utf8,umask=000,uid=1024,gid=100 /dev/sdq1 /volumeUSB1/usbshare
+# 可以认为是标准mount命令的参数。倒数第二个参数($5)是要挂载的设备，最后一个参数($6)是挂载点。
+
 USB=$(echo "$@" | grep "volumeUSB")
 #usb types
 if [ -n "$USB" ]; then
@@ -8,22 +14,7 @@ if [ -n "$USB" ]; then
     if [ "$2" == "exfat" ]; then
         m=$(/bin/mount.bin | grep "$5")
         if [ -z "$m" ]; then
-            n="$6"
-            n=${n#*/volumeUSB}
-            n=${n%%/usbshare}
-            #first, get samba shared folder by default
-            MOUNTDIR=$(cat /etc/samba/smb.share.conf | grep 'path=' | grep 'usbexfat')
-            if [ -n "$MOUNTDIR" ]; then
-                MOUNTDIR=${MOUNTDIR#*=}
-            else
-                #second, get any dir named: usbexft
-                MOUNTDIR=$(find /volume*/usbexfat -name 'usbexfat' -type d | sed -n '1p')
-                if [ -z "$MOUNTDIR" ]; then
-                    #third, get the first volume and create dir usbexfat
-                    MOUNTDIR=$(find /volume* -type d | sed -n '1p')"/usbexfat"
-                fi                
-            fi
-            MOUNTPOINT="$MOUNTDIR/usbshare$n"
+            MOUNTPOINT="$6"
             if [ ! -d "$MOUNTPOINT" ]; then
                 mkdir -p "$MOUNTPOINT"
             fi
